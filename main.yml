@@ -1,0 +1,97 @@
+name: 🚀 CI/CD Pipeline - Full Stack App
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    name: 🧩 Build & Test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+      # Step 1: Checkout repository
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v3
+
+      # Step 2: Setup Node.js environment
+      - name: 🧰 Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      # Step 3: Install backend dependencies
+      - name: ⚙️ Install Backend Dependencies
+        working-directory: ./backend
+        run: npm install
+
+      # Step 4: Run backend tests (optional)
+      - name: 🧪 Run Backend Tests
+        working-directory: ./backend
+        run: |
+          if [ -f package.json ] && grep -q '"test":' package.json; then
+            npm test
+          else
+            echo "No backend tests found, skipping..."
+          fi
+
+      # Step 5: Install frontend dependencies
+      - name: 🎨 Install Frontend Dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      # Step 6: Run frontend tests (optional)
+      - name: 🧪 Run Frontend Tests
+        working-directory: ./frontend
+        run: |
+          if [ -f package.json ] && grep -q '"test":' package.json; then
+            npm test
+          else
+            echo "No frontend tests found, skipping..."
+          fi
+
+      # Step 7: Build the frontend app
+      - name: 🏗️ Build Frontend
+        working-directory: ./frontend
+        run: npm run build
+
+      # Step 8: Upload build artifacts (for debugging or deployment)
+      - name: 📦 Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-build
+          path: frontend/build
+
+  deploy:
+    name: 🚀 Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v3
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: 📂 Install Dependencies
+        working-directory: ./frontend
+        run: npm install
+
+      - name: ⚙️ Build Project
+        working-directory: ./frontend
+        run: npm run build
+
+      - name: 🌐 Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./frontend/build
